@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Sudoku</title>
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<meta charset="utf-8">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script src="puzzle/helpers.js"></script>
+	<script type="text/javascript">
+
+		$(document).ready(() => {
+			
+			var solvedBoard;
+			var solvedSectors;
+			var sectors = { } ;
+			var board = [ ] ;
+
+			$("#b-solve").click(() => {
+
+				if (!solvedBoard) {
+
+					board = [ ];
+					sectors = { };
+
+					$(":input").each((index, element) => {
+
+						const elementClasses = $(element).attr("class");
+
+						if (!elementClasses) return;
+
+						const inputClasses = elementClasses.split(/\s+/);
+
+						board.push({
+
+							sectors: inputClasses,
+							value: $(element).val(),
+							possibilities: ['1','2','3','4','5','6','7','8','9']
+
+						});
+						
+						inputClasses.forEach(c => {
+
+							sectors[c] = sectors[c] || [ ] ;
+
+							sectors[c].push($(element).val());
+
+						});
+
+					});
+
+					({ board: solvedBoard } = solveSudoku(board, sectors));					
+
+				};
+
+				solvedBoard.forEach(cell => {
+
+					let cellId = cell.sectors.join('_');
+
+					$(`#${cellId}`).val(cell.value);
+				
+				});
+				
+				return;
+
+			})
+
+			$("#b-random").click(() => {
+				
+				board = [ ];
+				sectors = { };
+				
+				$(":input").each((index, element) => {
+
+					const elementClasses = $(element).attr("class");
+
+					if (!elementClasses) return;
+
+					const inputClasses = elementClasses.split(/\s+/);
+
+					board.push({
+
+						sectors: inputClasses,
+						value: '',
+						possibilities: ['1','2','3','4','5','6','7','8','9']
+
+					});
+					
+					inputClasses.forEach(c => {
+
+						sectors[c] = sectors[c] || [ ] ;
+
+						sectors[c].push('');
+
+					});
+
+				});
+
+				({ board, sectors, solvedBoard, solvedSectors } = generatePossibleSudoku(board, sectors, 'hard'));
+
+				board.forEach(cell => {
+
+					let cellId = cell.sectors.join('_');
+
+					$(`#${cellId}`).val(cell.value);
+				
+				});
+
+				console.log(board);
+				console.log(sectors);
+
+				return;
+
+			});
+
+			$("#b-tip").click(() => {
+
+				let unfilledCells = board.filter(cell => cell.value === '');
+
+				let randomIndex = getRandomNumber(0, unfilledCells.length);
+
+				let randomCell = unfilledCells[randomIndex];
+
+				let randomCellId = randomCell.sectors.join('_');
+
+				let solvedCell = solvedBoard.filter(cell => cell.sectors.join('_') === randomCellId)[0];
+				
+				let unsolvedCell = board.filter(cell => cell.sectors.join('_') === randomCellId)[0];
+
+				unsolvedCell.value = solvedCell.value;
+				
+				$(`#${randomCellId}`).val(solvedCell.value);
+
+				return;
+
+			});
+
+		});
+		
+
+	</script>
+</head>
+<body>
+	<div id="form">	
+		<div id="board">
+			<div class="block" id="b-upper-left">
+				<div class="cell"><input class="b1 c1 r1" id="b1_c1_r1" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b1 c2 r1" id="b1_c2_r1" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b1 c3 r1" id="b1_c3_r1" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b1 c1 r2" id="b1_c1_r2" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b1 c2 r2" id="b1_c2_r2" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b1 c3 r2" id="b1_c3_r2" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b1 c1 r3" id="b1_c1_r3" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b1 c2 r3" id="b1_c2_r3" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b1 c3 r3" id="b1_c3_r3" type="text" maxlength="1"></div>
+			</div>
+			<div class="block" id="b-upper-central">
+				<div class="cell"><input class="b2 c4 r1" id="b2_c4_r1" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b2 c5 r1" id="b2_c5_r1" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b2 c6 r1" id="b2_c6_r1" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b2 c4 r2" id="b2_c4_r2" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b2 c5 r2" id="b2_c5_r2" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b2 c6 r2" id="b2_c6_r2" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b2 c4 r3" id="b2_c4_r3" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b2 c5 r3" id="b2_c5_r3" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b2 c6 r3" id="b2_c6_r3" type="text" maxlength="1"></div>
+			</div>	
+			<div class="block" id="b-upper-right">
+				<div class="cell"><input class="b3 c7 r1" id="b3_c7_r1" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b3 c8 r1" id="b3_c8_r1" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b3 c9 r1" id="b3_c9_r1" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b3 c7 r2" id="b3_c7_r2" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b3 c8 r2" id="b3_c8_r2" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b3 c9 r2" id="b3_c9_r2" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b3 c7 r3" id="b3_c7_r3" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b3 c8 r3" id="b3_c8_r3" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b3 c9 r3" id="b3_c9_r3" type="text" maxlength="1"></div>
+			</div>	
+			<div class="block" id="b-middle-left">
+				<div class="cell"><input class="b4 c1 r4" id="b4_c1_r4" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b4 c2 r4" id="b4_c2_r4" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b4 c3 r4" id="b4_c3_r4" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b4 c1 r5" id="b4_c1_r5" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b4 c2 r5" id="b4_c2_r5" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b4 c3 r5" id="b4_c3_r5" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b4 c1 r6" id="b4_c1_r6" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b4 c2 r6" id="b4_c2_r6" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b4 c3 r6" id="b4_c3_r6" type="text" maxlength="1"></div>
+			</div>	
+			<div class="block" id="b-middle-central">
+				<div class="cell"><input class="b5 c4 r4" id="b5_c4_r4" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b5 c5 r4" id="b5_c5_r4" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b5 c6 r4" id="b5_c6_r4" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b5 c4 r5" id="b5_c4_r5" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b5 c5 r5" id="b5_c5_r5" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b5 c6 r5" id="b5_c6_r5" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b5 c4 r6" id="b5_c4_r6" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b5 c5 r6" id="b5_c5_r6" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b5 c6 r6" id="b5_c6_r6" type="text" maxlength="1"></div>
+			</div>	
+			<div class="block" id="b-middle-right">
+				<div class="cell"><input class="b6 c7 r4" id="b6_c7_r4" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b6 c8 r4" id="b6_c8_r4" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b6 c9 r4" id="b6_c9_r4" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b6 c7 r5" id="b6_c7_r5" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b6 c8 r5" id="b6_c8_r5" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b6 c9 r5" id="b6_c9_r5" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b6 c7 r6" id="b6_c7_r6" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b6 c8 r6" id="b6_c8_r6" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b6 c9 r6" id="b6_c9_r6" type="text" maxlength="1"></div>
+			</div>	
+			<div class="block" id="b-bottom-left">
+				<div class="cell"><input class="b7 c1 r7" id="b7_c1_r7" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b7 c2 r7" id="b7_c2_r7" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b7 c3 r7" id="b7_c3_r7" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b7 c1 r8" id="b7_c1_r8" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b7 c2 r8" id="b7_c2_r8" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b7 c3 r8" id="b7_c3_r8" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b7 c1 r9" id="b7_c1_r9" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b7 c2 r9" id="b7_c2_r9" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b7 c3 r9" id="b7_c3_r9" type="text" maxlength="1"></div>
+			</div>	
+			<div class="block" id="b-bottom-central">
+				<div class="cell"><input class="b8 c4 r7" id="b8_c4_r7" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b8 c5 r7" id="b8_c5_r7" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b8 c6 r7" id="b8_c6_r7" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b8 c4 r8" id="b8_c4_r8" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b8 c5 r8" id="b8_c5_r8" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b8 c6 r8" id="b8_c6_r8" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b8 c4 r9" id="b8_c4_r9" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b8 c5 r9" id="b8_c5_r9" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b8 c6 r9" id="b8_c6_r9" type="text" maxlength="1"></div>
+			</div>	
+			<div class="block" id="b-bottom-right">
+				<div class="cell"><input class="b9 c7 r7" id="b9_c7_r7" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b9 c8 r7" id="b9_c8_r7" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b9 c9 r7" id="b9_c9_r7" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b9 c7 r8" id="b9_c7_r8" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b9 c8 r8" id="b9_c8_r8" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b9 c9 r8" id="b9_c9_r8" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b9 c7 r9" id="b9_c7_r9" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b9 c8 r9" id="b9_c8_r9" type="text" maxlength="1"></div>
+				<div class="cell"><input class="b9 c9 r9" id="b9_c9_r9" type="text" maxlength="1"></div>
+			</div>
+		</div>
+		<div id="buttons">
+			<div><button type="button" id="b-tip">Dica</button></div>
+			<div><button type="button" id="b-solve">Resolver</button></div>
+			<div><button type="button" id="b-random">Novo Sudoku</button></div>
+		</div>
+	</div>
+</body>
+</html>

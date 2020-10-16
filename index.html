@@ -5,142 +5,97 @@
 	<link rel="stylesheet" type="text/css" href="style.css">
 	<meta charset="utf-8">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-	<script src="puzzle/helpers.js"></script>
+	<script src="functions.js"></script>
+	<script src="standard.js"></script>
 	<script type="text/javascript">
 
+		var level = 'medium';
+		var sudokus = { };
+
+		sudokus.current = generateValidSudoku(emptyBoard, emptySectors);
+
 		$(document).ready(() => {
-			
-			var solvedBoard;
-			var solvedSectors;
-			var sectors = { } ;
-			var board = [ ] ;
 
 			$("#b-solve").click(() => {
 
-				if (!solvedBoard) {
-
-					board = [ ];
-					sectors = { };
-
-					$(":input").each((index, element) => {
-
-						const elementClasses = $(element).attr("class");
-
-						if (!elementClasses) return;
-
-						const inputClasses = elementClasses.split(/\s+/);
-
-						board.push({
-
-							sectors: inputClasses,
-							value: $(element).val(),
-							possibilities: ['1','2','3','4','5','6','7','8','9']
-
-						});
-						
-						inputClasses.forEach(c => {
-
-							sectors[c] = sectors[c] || [ ] ;
-
-							sectors[c].push($(element).val());
-
-						});
-
-					});
-
-					({ board: solvedBoard } = solveSudoku(board, sectors));					
-
-				};
-
-				solvedBoard.forEach(cell => {
-
-					let cellId = cell.sectors.join('_');
-
-					$(`#${cellId}`).val(cell.value);
+				printSudoku(sudokus.current.board, 81);
 				
-				});
-				
-				return;
-
-			})
-
-			$("#b-random").click(() => {
-				
-				board = [ ];
-				sectors = { };
-				
-				$(":input").each((index, element) => {
-
-					const elementClasses = $(element).attr("class");
-
-					if (!elementClasses) return;
-
-					const inputClasses = elementClasses.split(/\s+/);
-
-					board.push({
-
-						sectors: inputClasses,
-						value: '',
-						possibilities: ['1','2','3','4','5','6','7','8','9']
-
-					});
-					
-					inputClasses.forEach(c => {
-
-						sectors[c] = sectors[c] || [ ] ;
-
-						sectors[c].push('');
-
-					});
-
-				});
-
-				({ board, sectors, solvedBoard, solvedSectors } = generatePossibleSudoku(board, sectors, 'hard'));
-
-				board.forEach(cell => {
-
-					let cellId = cell.sectors.join('_');
-
-					$(`#${cellId}`).val(cell.value);
-				
-				});
-
-				console.log(board);
-				console.log(sectors);
-
 				return;
 
 			});
 
 			$("#b-tip").click(() => {
 
-				let unfilledCells = board.filter(cell => cell.value === '');
-
-				let randomIndex = getRandomNumber(0, unfilledCells.length);
-
-				let randomCell = unfilledCells[randomIndex];
-
-				let randomCellId = randomCell.sectors.join('_');
-
-				let solvedCell = solvedBoard.filter(cell => cell.sectors.join('_') === randomCellId)[0];
-				
-				let unsolvedCell = board.filter(cell => cell.sectors.join('_') === randomCellId)[0];
-
-				unsolvedCell.value = solvedCell.value;
-				
-				$(`#${randomCellId}`).val(solvedCell.value);
+				printSudoku(sudokus.current.board, 1, false);
 
 				return;
 
 			});
 
+			$("input").keypress(e => {
+
+				// From https://jsfiddle.net/lesson8/HkEuf/1/.
+				if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)) return false;
+
+				return;
+
+			});
+
+			$("input").change(function () {
+
+				if (!this.value) return;
+
+				let { board } = sudokus.current;
+
+				for (let cell of board) {
+
+					let cellId = cell.sectors.join('_');
+
+					if (cellId === this.id) {
+
+						if (cell.value !== this.value) {
+
+							$(this).val('')
+
+							alert('Wrong value!');
+
+						};
+
+						return;
+
+					};
+
+				};
+
+
+			});
+
+			$(".new").click(function () {
+
+				level = this.id;
+
+				printSudoku(sudokus.next.board, levels[level]);
+
+				sudokus.current = sudokus.next;				
+
+				sudokus.next = generateValidSudoku(emptyBoard, emptySectors);
+								
+				return;
+
+			});
+
+
 		});
-		
 
 	</script>
 </head>
 <body>
-	<div id="form">	
+	<div id="sudoku">
+		<div id="new_sudoku">
+			<div><button type="button" class="new" id="easy">Easy</button></div>
+			<div><button type="button" class="new" id="medium">Medium</button></div>
+			<div><button type="button" class="new" id="hard">Hard</button></div>
+		</div>
 		<div id="board">
 			<div class="block" id="b-upper-left">
 				<div class="cell"><input class="b1 c1 r1" id="b1_c1_r1" type="text" maxlength="1"></div>
@@ -241,12 +196,22 @@
 				<div class="cell"><input class="b9 c8 r9" id="b9_c8_r9" type="text" maxlength="1"></div>
 				<div class="cell"><input class="b9 c9 r9" id="b9_c9_r9" type="text" maxlength="1"></div>
 			</div>
-		</div>
-		<div id="buttons">
-			<div><button type="button" id="b-tip">Dica</button></div>
-			<div><button type="button" id="b-solve">Resolver</button></div>
-			<div><button type="button" id="b-random">Novo Sudoku</button></div>
+		</div>	
+		<div id="tip_or_solve">
+			<div><button type="button" id="b-tip">Tip</button></div>
+			<div><button type="button" id="b-solve">Solve</button></div>
 		</div>
 	</div>
+	<script type="text/javascript">
+
+		printSudoku(sudokus.current.board, levels[level]);
+
+		$(document).ready(() => {
+
+			sudokus.next = generateValidSudoku(emptyBoard, emptySectors)
+
+		});
+
+	</script>
 </body>
 </html>
